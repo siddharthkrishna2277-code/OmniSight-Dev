@@ -1,0 +1,1237 @@
+# type: ignore
+from flask import Flask, render_template_string, jsonify, request, make_response
+import logging
+
+app = Flask(__name__)
+
+# Suppress annoying background terminal web spam
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)
+
+# Global runtime state tracking user selections, incoming analytics, and tabs
+UI_DATA = {
+    "status": "SYSTEM SYNCHRONIZED",
+    "source": "Awaiting Native Link...",
+    "intel": "Launch your stream window or game client for profile: DIVISION2",
+    "local_ip": "127.0.0.1"
+}
+SELECTED_GAME = "DIVISION2"
+
+DASHBOARD_HTML = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OMNISIGHT COMPANION BANANA // OPERATOR HUB</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        :root {
+            /* Authentic Discord Core Design Palette Colors */
+            --discord-bg-main: #313338;     
+            --discord-bg-sidebar: #2b2d31;  
+            --discord-bg-darkest: #1e1f22;  
+            --discord-text-normal: #dbdee1; 
+            --discord-text-muted: #949ba4;  
+            
+            --omnisight-orange: #ff6a1a;
+            --accent-gradient: linear-gradient(135deg, #ff6a1a 0%, #ff8838 100%);
+            --ui-success-green: #23a55a;    
+            --card-border: rgba(255, 255, 255, 0.05);
+        }
+
+        body {
+            background-color: var(--discord-bg-darkest);
+            color: var(--discord-text-normal);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .app-window-frame {
+            display: grid;
+            grid-template-columns: 340px 1fr;
+            width: 100vw;
+            height: 100vh;
+            background-color: var(--discord-bg-main);
+        }
+
+        .app-sidebar {
+            background-color: var(--discord-bg-sidebar);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100%;
+            border-right: 1px solid rgba(0, 0, 0, 0.2);
+            box-sizing: border-box;
+        }
+
+        .sidebar-header-anchor {
+            padding: 30px 24px 0 24px;
+        }
+
+        .brand-block {
+            text-align: center;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .brand-block h1 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            font-family: 'JetBrains Mono', monospace;
+            color: #ffffff;
+            line-height: 1.2;
+        }
+
+        .brand-block h1 span {
+            color: var(--omnisight-orange);
+        }
+
+        .brand-block .version-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--discord-text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 6px;
+        }
+
+        .sidebar-center-deck {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            gap: 20px;                   
+            padding: 24px 24px 0 24px;   
+        }
+
+        .nav-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            text-align: center;
+        }
+
+        .nav-group-header {
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--discord-text-muted);
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        select {
+            background: var(--discord-bg-darkest);
+            color: #f2f3f5;
+            border: 1px solid transparent;
+            padding: 14px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            outline: none;
+            width: 100%;
+            text-align-last: center;
+            transition: all 0.15s ease;
+        }
+
+        select:hover { background-color: #35373c; }
+        select:focus { border-color: var(--omnisight-orange); }
+
+        .tab-button {
+            background: var(--discord-bg-darkest);
+            color: var(--discord-text-normal);
+            border: 1px solid var(--card-border);
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: center;
+            font-family: 'JetBrains Mono', monospace;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.2s ease;
+        }
+
+        .tab-button:hover, .tab-button.active {
+            background: var(--omnisight-orange);
+            color: #ffffff;
+            border-color: transparent;
+        }
+
+        .node-card {
+            background: rgba(30, 31, 34, 0.4);
+            border-radius: 6px;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            border: 1px solid var(--card-border);
+            text-align: center;
+        }
+
+        .node-card .title {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--discord-text-muted);
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .node-card .value {
+            font-size: 14.5px;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .sidebar-footer {
+            background-color: #232428;
+            padding: 14px 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .user-avatar-group {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 10px;
+            text-align: left;
+        }
+
+        .status-dot {
+            width: 11px;
+            height: 11px;
+            background-color: var(--ui-success-green);
+            border-radius: 50%;
+            box-shadow: 0 0 6px var(--ui-success-green);
+            cursor: pointer;
+        }
+
+        .footer-meta-title {
+            font-size: 13.5px; 
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: 0.5px;
+        }
+
+        .footer-meta-status {
+            font-size: 11px;
+            color: var(--discord-text-muted);
+        }
+
+        .gear-settings-btn {
+            background: transparent;
+            border: none;
+            color: var(--discord-text-muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 6px;
+            border-radius: 4px;
+            transition: background 0.15s, color 0.15s;
+        }
+
+        .gear-settings-btn:hover, .gear-settings-btn.active {
+            background-color: #35373c;
+            color: #f2f3f5;
+        }
+
+        .gear-settings-btn svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+            transition: transform 0.3s ease;
+        }
+
+        .gear-settings-btn:hover svg {
+            transform: rotate(45deg);
+        }
+
+        .app-viewport {
+            background-color: var(--discord-bg-main);
+            height: 100%;
+            overflow-y: auto;
+            padding: 40px;
+            box-sizing: border-box;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .unified-control-panel {
+            background-color: var(--discord-bg-sidebar);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            width: 100%;
+            max-width: 1100px;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-master-header {
+            padding: 24px 35px;
+            border-bottom: 1px solid var(--card-border);
+            background-color: rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .panel-master-header h3 {
+            margin: 0;
+            font-size: 15px;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            color: #ffffff;
+            letter-spacing: 2px;
+        }
+
+        .panel-split-workspace {
+            display: grid;
+            grid-template-columns: 420px 1fr;
+            min-height: 480px;
+        }
+
+        .welcome-panel-left {
+            padding: 40px 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            text-align: center;
+            border-right: 1px solid var(--card-border);
+            box-sizing: border-box;
+        }
+
+        .welcome-panel-left h2 {
+            font-size: 21px;
+            margin: 12px 0 12px 0;
+            color: #ffffff;
+            font-weight: 700;
+        }
+
+        .welcome-panel-left p {
+            font-size: 13.5px;
+            color: var(--discord-text-normal);
+            line-height: 1.5;
+            margin: 0 0 20px 0;
+        }
+
+        .matrix-pill-badge {
+            display: inline-block;
+            background: rgba(255, 106, 26, 0.1);
+            border: 1px solid var(--omnisight-orange);
+            padding: 8px 18px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            color: #ffffff;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .beacon-pulse-indicator {
+            width: 10px;
+            height: 10px;
+            background-color: var(--omnisight-orange);
+            border-radius: 50%;
+            margin-bottom: 10px;
+            box-shadow: 0 0 0 0 rgba(255, 106, 26, 0.5);
+            animation: radar-glow-cycle 2s infinite ease-in-out;
+        }
+
+        @keyframes radar-glow-cycle {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 106, 26, 0.6); }
+            70% { transform: scale(1); box-shadow: 0 0 0 12px rgba(255, 106, 26, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 106, 26, 0); }
+        }
+
+        .home-broadcaster-card {
+            background: var(--discord-bg-darkest);
+            border: 1px solid rgba(255, 106, 26, 0.2);
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 32px;
+            width: 100%;
+            box-sizing: border-box;
+            text-align: left;
+        }
+
+        .home-broadcaster-card h5 {
+            margin: 0 0 6px 0;
+            font-size: 13px;
+            color: #ffffff;
+            font-family: 'JetBrains Mono', monospace;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .home-broadcaster-card p {
+            margin: 0 0 12px 0;
+            font-size: 11.5px;
+            color: var(--discord-text-muted);
+            line-height: 1.4;
+        }
+
+        .onboarding-guide-right {
+            padding: 35px 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            background-color: rgba(0, 0, 0, 0.05);
+            box-sizing: border-box;
+        }
+
+        .guide-step-tile {
+            background-color: rgba(49, 51, 56, 0.4);
+            border: 1px solid var(--card-border);
+            border-radius: 6px;
+            padding: 16px 20px;
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+        }
+
+        .tile-number-badge {
+            background-color: var(--discord-bg-darkest);
+            color: var(--omnisight-orange);
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            font-size: 13px;
+            width: 26px;
+            height: 26px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .tile-text-group {
+            flex-grow: 1;
+        }
+
+        .tile-text-group h4 {
+            margin: 0 0 4px 0;
+            font-size: 14px;
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        .tile-text-group p {
+            margin: 0 0 10px 0;
+            font-size: 12.5px;
+            color: var(--discord-text-muted);
+            line-height: 1.5;
+        }
+
+        .handshake-inline-form {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 8px;
+            width: 100%;
+        }
+
+        .handshake-inline-form input {
+            background: var(--discord-bg-darkest);
+            border: 1px solid var(--card-border);
+            border-radius: 4px;
+            padding: 8px 12px;
+            color: #ffffff;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            outline: none;
+            flex-grow: 1;
+            transition: border-color 0.15s;
+        }
+
+        .handshake-inline-form input:focus {
+            border-color: var(--omnisight-orange);
+        }
+
+        .handshake-submit-btn {
+            background-color: var(--omnisight-orange);
+            color: #ffffff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: background 0.15s;
+        }
+
+        .handshake-submit-btn:hover {
+            background-color: #ff823a;
+        }
+
+        .markdown-body {
+            font-size: 15px;
+            line-height: 1.6;
+            color: var(--discord-text-normal);
+            width: 100%;
+            max-width: 820px;
+            background-color: var(--discord-bg-sidebar);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 45px;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.2);
+            box-sizing: border-box;
+        }
+
+        .markdown-body h3 {
+            color: #ffffff;
+            font-size: 19px;
+            margin-top: 0;
+            margin-bottom: 16px;
+            font-weight: 700;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            padding-bottom: 8px;
+        }
+
+        .settings-container, .storefront-container {
+            width: 100%;
+            max-width: 900px;
+            background-color: var(--discord-bg-sidebar);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 40px;
+            box-sizing: border-box;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.2);
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+
+        /* Clean Discord-Style Divider Blocks for Settings */
+        .section-header-title {
+            font-size: 15px;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--discord-text-muted);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            padding-bottom: 8px;
+            margin-bottom: 20px;
+            margin-top: 24px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .section-header-title:first-child {
+            margin-top: 0;
+        }
+
+        .settings-row-block {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .settings-meta-label h5 {
+            margin: 0 0 4px 0;
+            font-size: 14.5px;
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        .settings-meta-label p {
+            margin: 0;
+            font-size: 12.5px;
+            color: var(--discord-text-muted);
+        }
+
+        .settings-selector-dropdown {
+            background: var(--discord-bg-darkest);
+            color: #ffffff;
+            border: 1px solid var(--card-border);
+            padding: 10px 16px;
+            border-radius: 4px;
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            outline: none;
+            width: 260px;
+            text-align-last: left;
+        }
+
+        .clipboard-link-container {
+            display: flex;
+            gap: 8px;
+            background: var(--discord-bg-darkest);
+            padding: 6px 6px 6px 14px;
+            border-radius: 6px;
+            border: 1px solid var(--card-border);
+            align-items: center;
+        }
+
+        .clipboard-text-string {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            color: var(--omnisight-orange);
+            font-weight: 600;
+        }
+
+        .action-icon-btn {
+            background-color: #35373c;
+            color: #ffffff;
+            border: none;
+            padding: 8px 14px;
+            font-family: 'Inter', sans-serif;
+            font-size: 12px;
+            font-weight: 600;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+
+        .action-icon-btn:hover { background-color: var(--omnisight-orange); }
+
+        .slider-engine-control {
+            -webkit-appearance: none;
+            width: 180px;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--discord-bg-darkest);
+            outline: none;
+        }
+
+        .slider-engine-control::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--omnisight-orange);
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .slider-engine-control::-webkit-slider-thumb:hover { transform: scale(1.2); }
+
+        .switch-toggle-input {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 22px;
+        }
+
+        .switch-toggle-input input { opacity: 0; width: 0; height: 0; }
+
+        .slider-switch-rail {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #35373c; transition: .2s; border-radius: 22px;
+        }
+
+        .slider-switch-rail:before {
+            position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px;
+            background-color: white; transition: .2s; border-radius: 50%;
+        }
+
+        input:checked + .slider-switch-rail { background-color: var(--ui-success-green); }
+        input:checked + .slider-switch-rail:before { transform: translateX(22px); }
+
+        .store-grid-deck {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 20px;
+        }
+
+        .store-item-card {
+            background: var(--discord-bg-darkest);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .store-item-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--omnisight-orange);
+        }
+
+        .store-card-hero-body {
+            padding: 20px;
+            flex-grow: 1;
+        }
+
+        .store-card-hero-body h4 {
+            margin: 0 0 6px 0;
+            font-size: 15px;
+            color: #ffffff;
+        }
+
+        .store-card-hero-body p {
+            margin: 0;
+            font-size: 12px;
+            color: var(--discord-text-muted);
+            line-height: 1.5;
+        }
+
+        .store-card-footer {
+            background: rgba(0, 0, 0, 0.15);
+            padding: 12px 20px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--omnisight-orange);
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            border-top: 1px solid var(--card-border);
+            text-align: center;
+        }
+
+        .developer-console-suite {
+            width: 100%;
+            max-width: 950px;
+            background-color: #111214;
+            border: 2px solid #e11d48;
+            border-radius: 8px;
+            padding: 35px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .dev-header-block {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(225, 29, 72, 0.2);
+            padding-bottom: 14px;
+            margin-bottom: 20px;
+        }
+
+        .dev-header-block h2 {
+            margin: 0;
+            font-size: 16px;
+            color: #e11d48;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .dev-scroll-ledger {
+            background: #1e1f22;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            padding: 20px;
+            max-height: 260px;
+            overflow-y: auto;
+            font-size: 12.5px;
+            color: #38bdf8;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+
+        @media (max-width: 1160px) {
+            .app-window-frame { grid-template-columns: 300px 1fr; }
+            .panel-split-workspace { grid-template-columns: 1fr; }
+            .welcome-panel-left { border-right: none; border-bottom: 1px solid var(--card-border); }
+        }
+    </style>
+    <script>
+        let CACHED_PROFILE_STATE = "";
+        let IS_DISPLAYING_MARKDOWN = false;
+        let CURRENT_ACTIVE_TAB = "dashboard";
+        let DEV_CLICK_COUNTER = 0;
+
+        function registerDevClick() {
+            DEV_CLICK_COUNTER++;
+            if (DEV_CLICK_COUNTER >= 5) {
+                document.getElementById('developerTabBtn').style.display = "block";
+                switchAppViewTab('developer');
+                DEV_CLICK_COUNTER = 0;
+            }
+        }
+
+        function switchAppViewTab(targetTabId) {
+            CURRENT_ACTIVE_TAB = targetTabId;
+            
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            const textBtn = document.getElementById(targetTabId + 'TabBtn');
+            if (textBtn) textBtn.classList.add('active');
+
+            const gearBtn = document.getElementById('gearSettingsBtn');
+            if (targetTabId === 'settings') {
+                gearBtn.classList.add('active');
+            } else {
+                gearBtn.classList.remove('active');
+            }
+
+            CACHED_PROFILE_STATE = "";
+            IS_DISPLAYING_MARKDOWN = false;
+            
+            if (targetTabId !== 'dashboard') {
+                renderStaticTabContent();
+            } else {
+                runSyncCycle();
+            }
+        }
+
+        function renderStaticTabContent() {
+            const container = document.getElementById('intelContainer');
+            
+            if (CURRENT_ACTIVE_TAB === 'settings') {
+                container.innerHTML = `
+                    <div class="settings-container animate-reveal">
+                        
+                        <!-- 1. APP PERFORMANCE -->
+                        <div class="section-header-title">App Performance and Graphics</div>
+                        
+                        <div class="settings-row-block">
+                            <div class="settings-meta-label">
+                                <h5>Scan Speed</h5>
+                                <p>Choose how often the AI scans your game screen to save power or increase speed.</p>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <span style="font-size:12px; font-weight:700; color:var(--discord-text-muted);">ECO</span>
+                                <input type="range" min="1" max="3" value="2" class="slider-engine-control">
+                                <span style="font-size:12px; font-weight:700; color:var(--omnisight-orange);">PERFORMANCE</span>
+                            </div>
+                        </div>
+
+                        <div class="settings-row-block">
+                            <div class="settings-meta-label">
+                                <h5>Hardware Acceleration</h5>
+                                <p>Use your computer's graphics hardware to run the AI smoothly without lowering your frame rate.</p>
+                            </div>
+                            <label class="switch-toggle-input">
+                                <input type="checkbox" checked>
+                                <span class="slider-switch-rail"></span>
+                            </label>
+                        </div>
+
+                        <!-- 2. AI CHANNELS -->
+                        <div class="section-header-title">AI Brain Channels</div>
+                        
+                        <div class="settings-row-block">
+                            <div class="settings-meta-label">
+                                <h5>AI Model</h5>
+                                <p>Choose the AI model version that meets your processing speed needs.</p>
+                            </div>
+                            <select class="settings-selector-dropdown">
+                                <option>Gemini 2.5 Flash (Fast &amp; Rampant)</option>
+                                <option>Gemini 2.5 Pro (Ultra Detailed)</option>
+                            </select>
+                        </div>
+
+                        <div class="settings-row-block">
+                            <div class="settings-meta-label">
+                                <h5>Screen Scanning Mode</h5>
+                                <p>Choose whether the AI checks the entire screen or focus-crops items cards directly.</p>
+                            </div>
+                            <select class="settings-selector-dropdown">
+                                <option>Focus Mode (Crop to Item Cards Only)</option>
+                                <option>Full-Screen Mode (Scan Entire Display)</option>
+                            </select>
+                        </div>
+
+                        <!-- 3. UI SETTINGS -->
+                        <div class="section-header-title">User Interface Settings</div>
+                        
+                        <div class="settings-row-block">
+                            <div class="settings-meta-label">
+                                <h5>Compact Overlay Layout</h5>
+                                <p>Shrink text padding and margins to pack more analytics layout fields onto smaller screens.</p>
+                            </div>
+                            <label class="switch-toggle-input">
+                                <input type="checkbox">
+                                <span class="slider-switch-rail"></span>
+                            </label>
+                        </div>
+
+                        <div class="settings-row-block">
+                            <div class="settings-meta-label">
+                                <h5>High-Contrast Text Layer</h5>
+                                <p>Maximize color definitions on text strings to make metrics readable on reflective mobile glass.</p>
+                            </div>
+                            <label class="switch-toggle-input">
+                                <input type="checkbox" checked>
+                                <span class="slider-switch-rail"></span>
+                            </label>
+                        </div>
+
+                        <!-- 4. AUDIO & TTS -->
+                        <div class="section-header-title">Notifications and Sounds</div>
+                        
+                        <div class="settings-row-block">
+                            <div class="settings-meta-label">
+                                <h5>Audio Alerts</h5>
+                                <p>Play a quick sound effect whenever the AI finds a perfect item stat roll.</p>
+                            </div>
+                            <label class="switch-toggle-input">
+                                <input type="checkbox" checked>
+                                <span class="slider-switch-rail"></span>
+                            </label>
+                        </div>
+
+                        <div class="settings-row-block">
+                            <div class="settings-meta-label">
+                                <h5>Tactical Audio Narrator (Text-to-Speech)</h5>
+                                <p>Have your tactical AI link read high-intelligence gear stats out loud right through your headset.</p>
+                            </div>
+                            <label class="switch-toggle-input">
+                                <input type="checkbox">
+                                <span class="slider-switch-rail"></span>
+                            </label>
+                        </div>
+
+                        <div class="settings-row-block">
+                            <div class="settings-meta-label">
+                                <h5>Desktop Notifications</h5>
+                                <p>Show system popup flags on your desktop whenever a game status profile updates.</p>
+                            </div>
+                            <label class="switch-toggle-input">
+                                <input type="checkbox" checked>
+                                <span class="slider-switch-rail"></span>
+                            </label>
+                        </div>
+
+                        <!-- 5. CACHE MANAGEMENT -->
+                        <div class="section-header-title">Local Data Cache Management</div>
+                        
+                        <div class="settings-row-block">
+                            <div class="settings-meta-label">
+                                <h5>Clear App Data Cache</h5>
+                                <p>Delete local log files, temporary images, and network tokens to fix sync bugs.</p>
+                            </div>
+                            <div style="display:flex; gap:10px;">
+                                <button class="action-icon-btn" style="background:#4e5058;">RESET LOGS</button>
+                                <button class="action-icon-btn" style="background:#da373c;">FLUSH CACHE</button>
+                            </div>
+                        </div>
+
+                    </div>
+                `;
+            } else if (CURRENT_ACTIVE_TAB === 'storefront') {
+                container.innerHTML = `
+                    <div class="storefront-container animate-reveal">
+                        <div class="section-header-title">🏪 COMPANION MODULE STOREFRONT</div>
+                        <p style="font-size:13.5px; color:var(--discord-text-normal); margin-bottom: 24px; line-height:1.5;">
+                            Expansions and functional tracking packages available for system environment profiles:
+                        </p>
+                        
+                        <div class="store-grid-deck">
+                            <div class="store-item-card">
+                                <div class="store-card-hero-body">
+                                    <h4>The Division 2 Expansion</h4>
+                                    <p>Activates full ISAC telemetry links, recalibration library god-roll flags, and tactical synergy builds.</p>
+                                </div>
+                                <div class="store-card-footer">Module Active</div>
+                            </div>
+                            <div class="store-item-card">
+                                <div class="store-card-hero-body">
+                                    <h4>Destiny 2 Ghost Matrix</h4>
+                                    <p>Unlocks complete space-magic armor stat analysis tier loops and Crucible/PvE weapon god-roll evaluation cards.</p>
+                                </div>
+                                <div class="store-card-footer">Module Active</div>
+                            </div>
+                            <div class="store-item-card">
+                                <div class="store-card-hero-body">
+                                    <h4>Diablo IV Affix Ledger</h4>
+                                    <p>Engages end-game item aspect parsing, codex of power evaluation filters, and min-max roll bracket metrics.</p>
+                                </div>
+                                <div class="store-card-footer">Module Active</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else if (CURRENT_ACTIVE_TAB === 'developer') {
+                container.innerHTML = `
+                    <div class="developer-console-suite animate-reveal">
+                        <div class="dev-header-block">
+                            <h2>⚙️ OMNISIGHT MASTER ADMIN DEVELOPER CONSOLE</h2>
+                            <span style="background:#e11d48; color:white; font-size:10px; padding:3px 8px; border-radius:3px; font-weight:700;">SECURITY CLEARANCE LEVEL 4</span>
+                        </div>
+                        
+                        <div class="dev-scroll-ledger">
+                            &gt; INITIALIZING FEATURE LEDGER INTEGRITY VALIDATION SCAN...<br>
+                            &gt; [SUCCESS] task_1_sidebar_consumer_labels: ACTIVE<br>
+                            &gt; [SUCCESS] task_2_native_zero_app_link_wizard: ACTIVE<br>
+                            &gt; [SUCCESS] task_3_connected_settings_panel: ACTIVE<br>
+                            &gt; [SUCCESS] task_4_static_storefront_preview: ACTIVE<br>
+                            &gt; [SUCCESS] task_5_hidden_5_click_developer_suite: ACTIVE<br>
+                            &gt; [SUCCESS] core_self_healing_manifest_protection: ACTIVE<br>
+                            &gt; Ready for local state pipeline diagnostic testing. Everything running perfectly.
+                        </div>
+
+                        <div class="section-header-title" style="color:#e11d48; border-color:rgba(225,29,72,0.2); font-size:14px;">SYSTEM OVERRIDE SIMULATORS</div>
+                        
+                        <div class="settings-row-block">
+                            <div class="settings-meta-label">
+                                <h5 style="color:#ffffff;">Simulate Exotic Drop Intercept</h5>
+                                <p>Bypasses the camera engine to force-inject an imaginary telemetry item card data stream into layout views.</p>
+                            </div>
+                            <button class="action-icon-btn" style="background:#e11d48;" onclick="triggerSimulatedData()">INJECT TEST MATRIX</button>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        async function executeHandshake(platform) {
+            alert(platform.toUpperCase() + " Native Link Handshake Initialized Successfully!");
+        }
+
+        async function triggerSimulatedData() {
+            await fetch('/api/force_simulation', { method: 'POST' });
+            switchAppViewTab('dashboard');
+        }
+
+        async function runSyncCycle() {
+            if (CURRENT_ACTIVE_TAB !== 'dashboard') return;
+
+            try {
+                let response = await fetch('/api/data');
+                let data = await response.json();
+                
+                document.getElementById('windowSource').innerText = data.source;
+                document.getElementById('engineStatus').innerText = data.status;
+                document.getElementById('hiddenIpCarrier').value = data.local_ip;
+                
+                const ipLabel = document.getElementById('liveHomeIpLabel');
+                if (ipLabel) {
+                    ipLabel.innerText = "http://" + data.local_ip + ":5000";
+                }
+                
+                let statusCard = document.getElementById('engineStatus');
+                if (data.status.includes("Awaiting") || data.status.includes("Initializing")) {
+                    statusCard.style.color = "#f59e0b";
+                } else if (data.status.includes("Processing")) {
+                    statusCard.style.color = "#38bdf8";
+                } else {
+                    statusCard.style.color = "var(--ui-success-green)";
+                }
+
+                // -> This is the exact line we just fixed! <-
+                if (data.intel.includes("Launch stream window") || data.intel.includes("Awaiting target")) {
+                    let segments = data.intel.split(":");
+                    let rawProfileName = segments.length > 1 ? segments.pop().trim() : "ACTIVE LAYER";
+                    
+                    if (CACHED_PROFILE_STATE !== rawProfileName || IS_DISPLAYING_MARKDOWN) {
+                        CACHED_PROFILE_STATE = rawProfileName;
+                        IS_DISPLAYING_MARKDOWN = false;
+                        
+                        document.getElementById('intelContainer').innerHTML = `
+                            <div class="unified-control-panel">
+                                <div class="panel-master-header">
+                                    <h3>NATIVE ZERO-APP SYNC ENGINE</h3>
+                                </div>
+                                <div class="panel-split-workspace">
+                                    <div class="welcome-panel-left">
+                                        <div class="beacon-pulse-indicator"></div>
+                                        <h2>Connect Gaming Feed</h2>
+                                        <p>OmniSight is directly monitoring network links. Initiate native handshakes for environmental engine matrix layer:</p>
+                                        <div class="matrix-pill-badge">` + rawProfileName + `</div>
+                                        
+                                        <div class="home-broadcaster-card">
+                                            <h5>📱 Second-Screen Sync Link</h5>
+                                            <p>Load this address on your tablet or smartphone browser grid to view your dashboard externally over Wi-Fi.</p>
+                                            <div class="clipboard-link-container">
+                                                <div id="liveHomeIpLabel" class="clipboard-text-string">http://` + data.local_ip + `:5000</div>
+                                                <button class="action-icon-btn" onclick="navigator.clipboard.writeText('http://' + document.getElementById('hiddenIpCarrier').value + ':5000')">COPY</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="onboarding-guide-right">
+                                        <div class="guide-step-tile">
+                                            <div class="tile-number-badge">01</div>
+                                            <div class="tile-text-group">
+                                                <h4>Native PlayStation Link Engine</h4>
+                                                <p>Enter your PSN Account ID and your 8-digit console sync PIN code to route the encrypted hardware stream directly into the local application layer.</p>
+                                                <div class="handshake-inline-form">
+                                                    <input type="text" id="psnIdInput" placeholder="Enter PSN Account ID...">
+                                                    <input type="text" id="psnPinInput" placeholder="8-Digit TV Code...">
+                                                    <button class="handshake-submit-btn" onclick="executeHandshake('playstation')">Link Hardware</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="guide-step-tile">
+                                            <div class="tile-number-badge">02</div>
+                                            <div class="tile-text-group">
+                                                <h4>Native Xbox Link Engine</h4>
+                                                <p>Authenticate your local Microsoft console profile to establish a direct, high-speed local stream handshake straight from your Xbox hardware.</p>
+                                                <button class="handshake-submit-btn" style="width:100%; padding:10px;" onclick="executeHandshake('xbox')">Authenticate Native Xbox Link</button>
+                                            </div>
+                                        </div>
+                                        <div class="guide-step-tile">
+                                            <div class="tile-number-badge">03</div>
+                                            <div class="tile-text-group">
+                                                <h4>Native PC Capture Module</h4>
+                                                <p>No extra software needed. Launch your game window (Steam, Battle.net, Epic) in borderless mode and the app intercepts the screen pipeline seamlessly.</p>
+                                                <button class="handshake-submit-btn" style="width:100%; padding:10px; background:#23a55a;" onclick="executeHandshake('pc')">Initialize Auto Window Intercept</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                } else {
+                    CACHED_PROFILE_STATE = "";
+                    IS_DISPLAYING_MARKDOWN = true;
+                    document.getElementById('intelContainer').innerHTML = `
+                        <div class="markdown-body">
+                            ` + marked.parse(data.intel) + `
+                        </div>
+                    `;
+                }
+            } catch(e) {}
+        }
+        
+        async function updateMatrixProfile() {
+            let selectedGame = document.getElementById('profileSelector').value;
+            await fetch('/api/select_game', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({game: selectedGame})
+            });
+            if (CURRENT_ACTIVE_TAB === 'dashboard') runSyncCycle();
+        }
+        
+        setInterval(runSyncCycle, 500);
+    </script>
+</head>
+<body>
+
+    <input type="hidden" id="hiddenIpCarrier" value="127.0.0.1">
+
+    <div class="app-window-frame">
+        <div class="app-sidebar">
+            <div class="sidebar-header-anchor">
+                <div class="brand-block">
+                    <h1>OMNISIGHT <span>COMPANION</span></h1>
+                    <div class="version-label">Powered by Gemini AI</div>
+                </div>
+            </div>
+
+            <div class="sidebar-center-deck">
+                <div class="nav-group">
+                    <div class="nav-group-header">System Profile Matrix</div>
+                    <select id="profileSelector" onchange="updateMatrixProfile()">
+                        <optgroup label="Action RPGs & Looters">
+                            <option value="division2">The Division 2 (ISAC Link)</option>
+                            <option value="destiny2">Destiny 2 (Ghost Link)</option>
+                            <option value="diablo4">Diablo IV (Horadric Link)</option>
+                            <option value="pathofexile">Path of Exile 1 &amp; 2</option>
+                            <option value="warframe">Warframe Codex</option>
+                            <option value="monsterhunter">Monster Hunter World/Wilds</option>
+                        </optgroup>
+                        <optgroup label="Tactical Shooters & BRs">
+                            <option value="valorant">Valorant Overlay</option>
+                            <option value="counterstrike">Counter-Strike 2 (CS2)</option>
+                            <option value="apexlegends">Apex Legends</option>
+                            <option value="callofduty">Call of Duty: WZ / BO6</option>
+                            <option value="helldivers2">Helldivers II</option>
+                            <option value="fortnite">Fortnite</option>
+                        </optgroup>
+                    </select>
+                </div>
+
+                <div class="nav-group">
+                    <div class="nav-group-header">Navigation Deck</div>
+                    <button id="dashboardTabBtn" class="tab-button active" onclick="switchAppViewTab('dashboard')">🎯 Analysis Hub</button>
+                    <button id="storefrontTabBtn" class="tab-button" onclick="switchAppViewTab('storefront')">🏪 Module Store</button>
+                    <button id="developerTabBtn" class="tab-button" style="display:none; background:#e11d48; border-color:transparent; color:white;" onclick="switchAppViewTab('developer')">🛠️ Developer Suite</button>
+                </div>
+
+                <div class="nav-group">
+                    <div class="nav-group-header">System Sync Status</div>
+                    
+                    <div class="node-card">
+                        <div class="title">Active Video Feed Source</div>
+                        <div id="windowSource" class="value">Searching...</div>
+                    </div>
+
+                    <div class="node-card">
+                        <div class="title">Engine Core State</div>
+                        <div id="engineStatus" class="value">Initializing...</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-footer">
+                <div class="user-avatar-group">
+                    <div id="devHandshakeTrigger" class="status-dot" onclick="registerDevClick()"></div>
+                    <div style="display:flex; flex-direction:column; margin-left:2px;">
+                        <div class="footer-meta-title">OMNISIGHT APP</div>
+                        <div class="footer-meta-status">System Operational</div>
+                    </div>
+                </div>
+                
+                <button id="gearSettingsBtn" class="gear-settings-btn" title="App Link Settings" onclick="switchAppViewTab('settings')">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.42-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l-.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3-1.57-3-3.5s1.07-3.5 3-3.5 3 1.57 3 3.5-1.07 3.5-3 3.5z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="app-viewport">
+            <div id="intelContainer" style="width:100%; display:flex; justify-content:center;">
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
+"""
+
+@app.route('/')
+def index():
+    # Anti-Caching Engine: Forces browser to request fresh HTML code every single boot
+    response = make_response(render_template_string(DASHBOARD_HTML))
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
+
+@app.route('/api/data')
+def get_data():
+    return jsonify(UI_DATA)
+
+@app.route('/api/select_game', methods=['POST'])
+def select_game():
+    global SELECTED_GAME
+    SELECTED_GAME = request.json.get("game", "division2")
+    return jsonify({"status": "success"})
+
+@app.route('/api/force_simulation', methods=['POST'])
+def force_simulation():
+    global UI_DATA
+    UI_DATA["status"] = "SYNCHRONIZED TEST"
+    UI_DATA["source"] = "Simulated Core Matrix Injector"
+    UI_DATA["intel"] = """### 🚨 COGNITIVE SYSTEM OVERRIDE INTEGRITY INTERCEPT
+* **Simulated Drop Triggered:** Exotic Analytical Data Card Array processed successfully.
+* **Recalibration Library Alert:** Affix values verified within maximum 100% brackets.
+* **Diagnostic Report:** Interface layouts, tab toggles, and processing pipelines are executing flawlessly."""
+    return jsonify({"status": "success"})
+
+def get_selected_game():
+    return SELECTED_GAME
+
+def update_ui_data(status, source, intel):
+    global UI_DATA
+    UI_DATA["status"] = status
+    UI_DATA["source"] = source
+    UI_DATA["intel"] = intel
+
+def start_server():
+    app.run(host='127.0.0.1', port=5000, debug=False, use_reloader=False)

@@ -1,0 +1,10 @@
+{
+  "version": "1.0.0",
+  "modules": [
+    "window_grabber.py",
+    "freeze_detector.py",
+    "gemini_client.py",
+    "ui_server.py"
+  ],
+  "patch_notes": "OmniSight Engine Deployed: Multi-game dashboard support, dynamic screen-crop mapping, and automated 1-second evaluation pipelines activated."
+}
