@@ -8,13 +8,15 @@ import json
 import shutil
 import zipfile
 import io
+import subprocess
 
 # --- OMNISIGHT V1 CORE IMPORTS ---
 import cloud_config
 from modules import window_grabber, freeze_detector, gemini_client, ui_server, omni_capture_engine
 
 LOCAL_VERSION = "1.0.0"
-UPDATE_URL = "https://raw.githubusercontent.com/siddharthkrishna2277-code/OmniSight-Dev/refs/heads/main/main.py"
+# This URL points to your GitHub repo's automatic zip download
+SECURE_ZIP_URL = "https://github.com/siddharthkrishna2277-code/OmniSight-Dev/archive/refs/heads/main.zip"
 
 # 🛡️ THE SYSTEM FEATURE MANIFEST LEDGER
 SYSTEM_FEATURE_MANIFEST = {
@@ -56,7 +58,6 @@ def crop_screen_by_game_rules(frame, game):
     if frame is None:
         return None
     height, width, _ = frame.shape
-    
     if game == "division2":
         return frame[int(height*0.15):int(height*0.85), int(width*0.65):int(width*0.98)]
     elif game == "destiny2":
@@ -64,34 +65,49 @@ def crop_screen_by_game_rules(frame, game):
     else:
         return frame[int(height*0.10):int(height*0.90), int(width*0.50):int(width*0.95)]
 
-def execute_dynamic_updater():
-    ZIP_URL = "https://github.com/siddharthkrishna2277-code/OmniSight-Dev/archive/refs/heads/main.zip"
-    print("📡 Checking the cloud for new engine updates...")
+
+# --- SECURE CONTAINER AUTO-UPDATER ---
+def execute_secure_updater(zip_url):
+    print("\n[OMNI-UPDATE] 📥 Secure Update found! Downloading package...")
     try:
-        response = requests.get(ZIP_URL)
-        if response.status_code == 200:
-            print("📥 Update found! Downloading and preparing extraction...")
-            with zipfile.ZipFile(io.BytesIO(response.content)) as zip_ref:
-                temp_dir = "omnisight_temp_update"
-                zip_ref.extractall(temp_dir)
-                extracted_folder = os.path.join(temp_dir, os.listdir(temp_dir)[0])
-                print("🗑️ Wiping old files and installing new architecture...")
-                for item in os.listdir(extracted_folder):
-                    source_path = os.path.join(extracted_folder, item)
-                    destination_path = os.path.join(os.getcwd(), item)
-                    if os.path.isdir(source_path):
-                        if os.path.exists(destination_path):
-                            shutil.rmtree(destination_path)
-                        shutil.copytree(source_path, destination_path)
-                    else:
-                        shutil.copy2(source_path, destination_path)
-                shutil.rmtree(temp_dir)
-                print("✅ Architecture successfully updated! Rebooting system...")
-                os.execv(sys.executable, ['python'] + sys.argv)
-        else:
-            print("☁️ System is already up to date or cloud is unreachable.")
+        # 1. Download to staging
+        response = requests.get(zip_url)
+        with open("omni_update.zip", "wb") as f:
+            f.write(response.content)
+
+        print("[OMNI-UPDATE] 🔄 Prepping staging area...")
+        with zipfile.ZipFile("omni_update.zip", 'r') as zip_ref:
+            zip_ref.extractall("update_staging")
+
+        # GitHub zips put everything inside a subfolder (like 'OmniSight-Dev-main')
+        extracted_folders = os.listdir("update_staging")
+        target_dir = os.path.join("update_staging", extracted_folders[0]) if len(extracted_folders) == 1 else "update_staging"
+
+        # 2. Build the Handoff Script (Bypasses Windows File Locks)
+        bat_script = f"""@echo off
+echo [OMNI-UPDATER] Waiting for main process to close safely...
+timeout /t 3 /nobreak > NUL
+echo [OMNI-UPDATER] Installing new core files...
+xcopy /s /y "{target_dir}\\*" .\\ > NUL
+echo [OMNI-UPDATER] Cleaning up temporary files...
+rmdir /s /q "update_staging"
+del omni_update.zip
+echo [OMNI-UPDATER] Booting updated OmniSight Engine...
+start "" python main.py
+del "%~f0"
+"""
+        with open("install_update.bat", "w") as b:
+            b.write(bat_script)
+
+        print("[OMNI-UPDATE] ✅ Download complete! Handing off to local installer...")
+        
+        # 3. Launch installer and KILL the current python app immediately
+        subprocess.Popen("install_update.bat", shell=True)
+        sys.exit(0)
+
     except Exception as e:
-        print(f"⚠️ Pipeline Error: {str(e)}")
+        print(f"[OMNI-UPDATE] ⚠️ Secure Pipeline Error: {str(e)}")
+
 
 def main_loop():
     detector = freeze_detector.FreezeDetector()
@@ -128,15 +144,16 @@ def main_loop():
         time.sleep(0.2)
 
 if __name__ == "__main__":
-    # ⚠️ The auto-updater is paused below with a hashtag so your manual file edits don't get overwritten!
-    # execute_dynamic_updater()
-    
     ui_server.UI_DATA["local_ip"] = get_local_ip()
     threading.Thread(target=ui_server.start_server, daemon=True).start()
 
     # --- 1. CHECK CLOUD TOGGLES & UPDATES ---
     current_config = cloud_config.fetch_cloud_config()
-    cloud_config.check_for_updates(current_config, current_version=LOCAL_VERSION)
+    needs_update = cloud_config.check_for_updates(current_config, current_version=LOCAL_VERSION)
+
+    # Trigger OTA Secure Updater if cloud_config flagged a new version
+    if needs_update:
+        execute_secure_updater(SECURE_ZIP_URL)
 
     # --- 2. BOOT THE CAPTURE ENGINE ---
     if current_config.get("enable_pc_capture", True):
