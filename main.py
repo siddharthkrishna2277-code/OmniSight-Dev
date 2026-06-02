@@ -5,10 +5,15 @@ import requests
 import socket
 import threading
 import json
+import shutil
+import zipfile
+import io
+
+
 from modules import window_grabber, freeze_detector, gemini_client, ui_server
 
 LOCAL_VERSION = "1.0.0"
-UPDATE_URL = "https://raw.githubusercontent.com/yourusername/yourrepo/main/"
+UPDATE_URL = "https://raw.githubusercontent.com/siddharthkrishna2277-code/OmniSight-Dev/refs/heads/main/main.py"
 
 # 🛡️ THE SYSTEM FEATURE MANIFEST LEDGER
 SYSTEM_FEATURE_MANIFEST = {
@@ -49,43 +54,65 @@ def crop_screen_by_game_rules(frame, game):
         return frame[int(height*0.10):int(height*0.90), int(width*0.50):int(width*0.95)]
 
 def execute_dynamic_updater():
-    print("[⚙️] Running Internal Self-Healing Integrity Check...")
+    """
+    The Ultimate ZIP Architecture Updater.
+    Downloads the entire repository into RAM, wipes the local files, 
+    replaces them with the fresh clone, and restarts the application.
+    """
     
-    if not os.path.exists("modules"):
-        os.makedirs("modules")
-        
-    with open("feature_manifest.json", "w") as f:
-        json.dump(SYSTEM_FEATURE_MANIFEST, f, indent=2)
-
-    missing_local_files = False
-    for module_file in SYSTEM_FEATURE_MANIFEST["required_files"]:
-        module_path = os.path.join("modules", module_file)
-        if not os.path.exists(module_path):
-            print(f"[⚠️] System Integrity Alert: Missing local core asset '{module_file}'. Auto-healing triggered...")
-            missing_local_files = True
-            
+    # ⚠️ IMPORTANT: Replace 'YOUR_GITHUB_USERNAME' with your actual GitHub username!
+    # Make sure the repository name is exactly 'OmniSight' (or whatever you named it).
+    ZIP_URL = "https://github.com/siddharthkrishna2277-code/OmniSight-Dev/archive/refs/heads/main.zip"
+    
+    print("📡 Checking the cloud for new engine updates...")
+    
     try:
-        response = requests.get(f"{UPDATE_URL}manifest.json", timeout=2)
+        # Step 1: The Cloud Fetch (Download into RAM)
+        response = requests.get(ZIP_URL)
+        
         if response.status_code == 200:
-            remote_manifest = response.json()
+            print("📥 Update found! Downloading and preparing extraction...")
             
-            if remote_manifest.get("version") != LOCAL_VERSION or missing_local_files:
-                print(f"[🚨] Synchronizing Architecture with Core Framework Manifest: v{remote_manifest.get('version', LOCAL_VERSION)}")
-                for module in remote_manifest.get("modules", SYSTEM_FEATURE_MANIFEST["required_files"]):
-                    mod_resp = requests.get(f"{UPDATE_URL}modules/{module}", timeout=5)
-                    if mod_resp.status_code == 200:
-                        with open(os.path.join("modules", module), "wb") as f:
-                            f.write(mod_resp.content)
-                            
-                with open("version.txt", "w") as f:
-                    f.write(remote_manifest.get("version", LOCAL_VERSION))
+            # Step 2: Unpack the ZIP from memory into a temporary local folder
+            with zipfile.ZipFile(io.BytesIO(response.content)) as zip_ref:
+                temp_dir = "omnisight_temp_update"
+                zip_ref.extractall(temp_dir)
+                
+                # GitHub nests everything inside a folder named 'RepoName-main' inside the ZIP
+                extracted_folder = os.path.join(temp_dir, os.listdir(temp_dir)[0])
+                
+                print("🗑️ Wiping old files and installing new architecture...")
+                
+                # Step 3: The 100% Wipe & Replace
+                for item in os.listdir(extracted_folder):
+                    source_path = os.path.join(extracted_folder, item)
+                    destination_path = os.path.join(os.getcwd(), item)
                     
-                print("[*] Core modules successfully synchronized. Re-launching application loop...")
-                os.execv(sys.executable, [sys.executable, __file__] + sys.argv[1:])
-    except Exception:
-        if missing_local_files:
-            print("[⚠️] Auto-healing failed because laptop is offline. Running with existing modules.")
+                    if os.path.isdir(source_path):
+                        if os.path.exists(destination_path):
+                            shutil.rmtree(destination_path) # Delete old folder
+                        shutil.copytree(source_path, destination_path) # Drop new folder
+                    else:
+                        shutil.copy2(source_path, destination_path) # Drop new file
+                        
+                # Clean up the temporary folder now that we are done with it
+                shutil.rmtree(temp_dir)
+                
+                print("✅ Architecture successfully updated! Rebooting system...")
+                
+                # Step 4: The Resurrection (Kill process and restart from fresh file)
+                os.execv(sys.executable, ['python'] + sys.argv)
+                
+        else:
+            print("☁️ System is already up to date or cloud is unreachable.")
+            
+    except Exception as e:
+        print(f"⚠️ Pipeline Error: {str(e)}")
 
+# Ensure this function is called at the very top of your script when it runs!
+if __name__ == "__main__":
+    execute_dynamic_updater()
+    # The rest of your app's startup code goes below this line...
 def get_local_ip():
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
