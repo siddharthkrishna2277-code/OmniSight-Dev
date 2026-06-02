@@ -8,6 +8,8 @@ import json
 import shutil
 import zipfile
 import io
+import cloud_config
+from modules import omni_capture_engine
 
 # --- OMNISIGHT V1 CORE IMPORTS ---
 import cloud_config
@@ -117,7 +119,7 @@ if __name__ == "__main__":
     ui_server.UI_DATA["local_ip"] = get_local_ip()
     threading.Thread(target=ui_server.start_server, daemon=True).start()
 
-    # --- 1. CHECK CLOUD TOGGLES & UPDATES ---
+   # --- 1. CHECK CLOUD TOGGLES & UPDATES ---
     current_config = cloud_config.fetch_cloud_config()
     cloud_config.check_for_updates(current_config, current_version=LOCAL_VERSION)
 
