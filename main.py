@@ -120,6 +120,10 @@ def main_loop():
     print(f" -> Open on SMARTPHONE or TABLET: http://{local_ip}:5000")
     print("=============================================================\n")
 
+    # Auto-launch the dashboard in the user's default web browser
+    import webbrowser
+    webbrowser.open("http://localhost:5000")
+
     while True:
         active_game = ui_server.get_selected_game()
         window, source_name = window_grabber.find_active_game_window(active_game)
