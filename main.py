@@ -9,9 +9,9 @@ import shutil
 import zipfile
 import io
 
-
-from modules import window_grabber, freeze_detector, gemini_client, ui_server
-
+# --- OMNISIGHT V1 CORE IMPORTS ---
+import cloud_config
+from modules import window_grabber, freeze_detector, gemini_client, ui_server, omni_capture_engine
 LOCAL_VERSION = "1.0.0"
 UPDATE_URL = "https://raw.githubusercontent.com/siddharthkrishna2277-code/OmniSight-Dev/refs/heads/main/main.py"
 
@@ -111,19 +111,24 @@ def execute_dynamic_updater():
 
 # Ensure this function is called at the very top of your script when it runs!
 if __name__ == "__main__":
-    execute_dynamic_updater()
-    # The rest of your app's startup code goes below this line...
-def get_local_ip():
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80))
-        ip = s.getsockname()[0]
-        s.close()
-        return ip
-    except Exception:
-        return "127.0.0.1"
+    # ⚠️ The auto-updater is paused below with a hashtag so your manual file edits don't get overwritten!
+    # execute_dynamic_updater()
+    
+    ui_server.UI_DATA["local_ip"] = get_local_ip()
+    threading.Thread(target=ui_server.start_server, daemon=True).start()
 
-def main_loop():
+    # --- 1. CHECK CLOUD TOGGLES & UPDATES ---
+    current_config = cloud_config.fetch_cloud_config()
+    cloud_config.check_for_updates(current_config, current_version=LOCAL_VERSION)
+
+    # --- 2. BOOT THE CAPTURE ENGINE ---
+    if current_config.get("enable_pc_capture", True):
+        omni_capture_engine.initialize_pc_capture(target_fps=60)
+    else:
+        print("[OMNI-ENGINE] PC Capture is disabled via Cloud Config.")
+        
+    # --- 3. START MAIN APPLICATION LOOP ---
+    main_loop()
     detector = freeze_detector.FreezeDetector()
     local_ip = get_local_ip()
     
