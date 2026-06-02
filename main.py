@@ -14,7 +14,7 @@ import subprocess
 import cloud_config
 from modules import window_grabber, freeze_detector, gemini_client, ui_server, omni_capture_engine
 
-LOCAL_VERSION = "1.0.0"
+LOCAL_VERSION = "1.0.1"
 # This URL points to your GitHub repo's automatic zip download
 SECURE_ZIP_URL = "https://github.com/siddharthkrishna2277-code/OmniSight-Dev/archive/refs/heads/main.zip"
 
