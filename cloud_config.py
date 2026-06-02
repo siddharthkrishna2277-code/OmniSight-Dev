@@ -5,7 +5,7 @@ import json
 # Purpose: Connects to your GitHub to read the master remote control file.
 
 # Note: We will replace this URL with your actual raw GitHub link before final launch.
-GITHUB_CONFIG_URL = "https://raw.githubusercontent.com/YOUR_USERNAME/Project_OmniSight/main/config.json"
+GITHUB_CONFIG_URL = "https://raw.githubusercontent.com/siddharthkrishna2277-code/OmniSight-Dev/main/config.json"
 
 def fetch_cloud_config():
     print("[OMNI-CLOUD] Checking GitHub for latest kill switches and updates...")

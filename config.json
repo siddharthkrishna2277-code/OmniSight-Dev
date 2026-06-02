@@ -1,0 +1,7 @@
+{
+  "maintenance_mode": false,
+  "enable_pc_capture": true,
+  "enable_playstation": true,
+  "enable_xbox": true,
+  "app_version": "1.0.1"
+}
