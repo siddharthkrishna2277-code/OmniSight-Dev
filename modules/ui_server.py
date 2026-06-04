@@ -16,10 +16,10 @@ log.setLevel(logging.ERROR)
 UI_DATA = {
     "status": "SYSTEM SYNCHRONIZED",
     "source": "Awaiting Native Link...",
-    "intel": "Launch your stream window or game client for profile: DIVISION2",
+    "intel": "Launch your stream window or game client for profile: NONE",
     "local_ip": "127.0.0.1"
 }
-SELECTED_GAME = "division2"
+SELECTED_GAME = "none"
 
 @app.route('/')
 def index():
@@ -32,10 +32,14 @@ def get_data():
 
 @app.route('/api/select_game', methods=['POST'])
 def select_game():
-    global SELECTED_GAME
+    global SELECTED_GAME, UI_DATA
     data = request.get_json()
     if data and "game" in data:
-        SELECTED_GAME = data["game"].strip().lower()
+        game_name = data["game"].strip().lower()
+        SELECTED_GAME = game_name
+
+        UI_DATA["intel"] = f"Launch your stream window or game client for profile: {game_name.upper()}"
+        
         return jsonify({"status": "success"})
     return jsonify({"status": "error"}), 400
 
@@ -52,6 +56,6 @@ def start_server():
     # Hardcoded host and port for your local network
     app.run(host='127.0.0.1', port=5000, debug=False, use_reloader=False)
 
-    # ADD THIS PART AT THE VERY BOTTOM, ALIGNED TO THE LEFT MARGIN
+# ADD THIS PART AT THE VERY BOTTOM, ALIGNED TO THE LEFT MARGIN
 if __name__ == "__main__":
     start_server()
