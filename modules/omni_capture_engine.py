@@ -6,6 +6,13 @@ import base64
 import traceback
 import datetime
 import requests # Make sure this is imported
+import cv2
+import numpy as np
+import json
+
+def load_config():
+    with open("config.json", "r") as f:
+        return json.load(f)
 
 def update_ui_status(status_text):
     try:
@@ -17,11 +24,13 @@ def update_ui_status(status_text):
 # --- SILENT AUTO-DEPENDENCY INSTALLER ---
 # Purpose: Checks the user's PC for required libraries on bootup.
 def verify_dependencies():
-    required_packages = ['opencv-python', 'flask', 'requests']
+    required_packages = ['opencv-python', 'flask', 'requests', 'numpy']
     for package in required_packages:
         try:
             if package == 'opencv-python':
                 __import__('cv2')
+            elif package == 'numpy':
+                __import__('numpy')
             else:
                 __import__(package)
         except ImportError:
@@ -104,51 +113,61 @@ def connect_xbox(xbox_ip):
         return None
     
  # --- THE PIPELINE MANAGER ---
-import cv2
-import numpy as np
 
-# --- THE UNIFIED PIPELINE MANAGER ---
+def forward_to_gemini(data):
+    pass # Placeholder for AI logic
+
+def forward_to_ui(data):
+    pass # Placeholder for Dashboard feed
+
+def write_to_buffer(data):
+    with open("stream_buffer.tmp", "ab") as f:
+        f.write(data)
+
+# --- THE TRIPLE-SINK DISPATCHER ---
 def run_capture_pipeline(connection_socket, console_type):
-    print(f"\n[OMNI-ENGINE] Pipeline engaged for {console_type}.")
-    
-    # Ping the UI Server
-    try:
-        requests.post("http://127.0.0.1:5000/api/update_status", 
-                      json={"status": f"Connected to {console_type}"})
-    except Exception as e:
-        print(f"[OMNI-ENGINE] UI update failed: {e}")
+    print(f"[OMNI-ENGINE] Pipeline engaged: {console_type}")
     
     while True:
         try:
-            raw_data = connection_socket.recv(65536) 
+            raw_data = connection_socket.recv(65536)
             if not raw_data: break
             
-            # Use the imported libraries here
-            nparr = np.frombuffer(raw_data, np.uint8)
-            frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            # SINK 1: AI Analysis (Gemini Hook)
+            # forward_to_gemini(raw_data)
             
-            print(f"[OMNI-ENGINE] Pipeline heartbeat: {len(raw_data)} bytes received.")
+            # SINK 2: UI Real-time Feed (Dashboard)
+            # forward_to_ui(raw_data)
             
+            # SINK 3: Local Integrity Log
+            # write_to_buffer(raw_data)
+            
+            print(f"[OMNI-ENGINE] Heartbeat: Processed {len(raw_data)} bytes across 3 sinks.")
         except Exception as e:
             print(f"[OMNI-ENGINE] Stream error: {e}")
             break
 
 # --- THE MASTER EXECUTION BLOCK ---
 if __name__ == "__main__":
-    # You can drive this with a config file later
-    target_console = "playstation" 
-    
-    print(f"--- Starting OmniSight Engine for: {target_console} ---")
-    
-    if target_console == "playstation":
-        sock = connect_playstation("192.168.1.50", "YOUR_PSN_ID", "1234")
-        if sock: run_capture_pipeline(sock, "PlayStation")
-            
-    elif target_console == "xbox":
-        sock = connect_xbox("192.168.1.60")
-        if sock: run_capture_pipeline(sock, "Xbox")
+    try:
+        with open("omni_link_settings.json", "r") as f:
+            config = json.load(f)
+            psn_id = config.get("psn_id")
+            pin = config.get("pin")
+            ip = config.get("ip")
+            target = config.get("console_type")
+    except FileNotFoundError:
+        print("[ERROR] omni_link_settings.json not found. Link via UI first.")
+        sys.exit()
 
-    elif target_console == "pc":
+    if target == "playstation":
+        sock = connect_playstation(ip, psn_id, pin)
+        if sock: run_capture_pipeline(sock, "PlayStation")
+    elif target == "xbox":
+        sock = connect_xbox(ip)
+        if sock: run_capture_pipeline(sock, "Xbox")
+     
+    elif target == "pc":
         if initialize_pc_capture():
             print("[OMNI-ENGINE] PC DirectX capture active. Frame acquisition would happen here.")
             # In a real implementation, this would interface with DXGI to capture frames
