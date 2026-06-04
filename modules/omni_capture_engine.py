@@ -147,6 +147,45 @@ def run_capture_pipeline(connection_socket, console_type):
             print(f"[OMNI-ENGINE] Stream error: {e}")
             break
 
+# --- THE PC-SPECIFIC DISPATCHER ---
+def run_pc_pipeline():
+    # Auto-install the screen capture library if missing
+    try:
+        import mss
+    except ImportError:
+        import subprocess, sys
+        print("[OMNI-ENGINE] Installing 'mss' for PC capture...")
+        subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'mss', '--quiet'])
+        import mss
+
+    print("\n[OMNI-ENGINE] PC Pipeline engaged.")
+    try:
+        requests.post("http://127.0.0.1:5000/api/update_status", json={"status": "Connected to PC"})
+    except:
+        pass
+
+    with mss.mss() as sct:
+        monitor = sct.monitors[1]  # Captures the primary monitor
+        while True:
+            try:
+                sct_img = sct.grab(monitor)
+                frame = np.array(sct_img)
+                
+                # Convert screenshot into the exact byte format your Sinks expect
+                _, buffer = cv2.imencode('.jpg', frame)
+                raw_data = buffer.tobytes()
+                
+                # SINK 1: AI Analysis (Gemini Hook)
+                # forward_to_gemini(raw_data)
+                
+                # SINK 2: UI Real-time Feed (Dashboard)
+                # forward_to_ui(raw_data)
+                
+                print(f"[OMNI-ENGINE] PC Heartbeat: Captured frame, {len(raw_data)} bytes")
+            except Exception as e:
+                print(f"[OMNI-ENGINE] PC Stream error: {e}")
+                break       
+
 # --- THE MASTER EXECUTION BLOCK ---
 if __name__ == "__main__":
     try:
@@ -166,9 +205,7 @@ if __name__ == "__main__":
     elif target == "xbox":
         sock = connect_xbox(ip)
         if sock: run_capture_pipeline(sock, "Xbox")
-     
     elif target == "pc":
-        if initialize_pc_capture():
-            print("[OMNI-ENGINE] PC DirectX capture active. Frame acquisition would happen here.")
+        run_pc_pipeline()  # Calls the new direct-capture function)
             # In a real implementation, this would interface with DXGI to capture frames
             # and feed them to a processing loop similar to run_capture_pipeline
