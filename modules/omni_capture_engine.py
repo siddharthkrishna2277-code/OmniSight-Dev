@@ -94,3 +94,47 @@ def connect_xbox(xbox_ip):
     except Exception as e:
         print(f"[OMNI-ENGINE] CRITICAL: Xbox connection failed. Error: {e}")
         return None
+    
+ # --- THE PIPELINE MANAGER ---
+import cv2
+import numpy as np
+
+def run_capture_pipeline(connection_socket, console_type):
+    print(f"\n[OMNI-ENGINE] Pipeline engaged for {console_type}. Streaming active...")
+    print("[OMNI-ENGINE] Monitoring binary packet flow...")
+    
+    while True:
+        try:
+            # Receive raw binary stream from the console socket
+            # 65536 is our packet buffer size
+            raw_data = connection_socket.recv(65536) 
+            if not raw_data: 
+                print("[OMNI-ENGINE] Connection closed by host.")
+                break
+            
+            # Here, your logic will eventually pass raw_data to the AI/Gemini engine
+            # For now, we confirm the data is flowing to the console
+            print(f"[OMNI-ENGINE] Data received: {len(raw_data)} bytes")
+            
+        except Exception as e:
+            print(f"[OMNI-ENGINE] Stream interrupted: {e}")
+            break
+
+# --- THE MASTER EXECUTION BLOCK (THE IGNITION) ---
+if __name__ == "__main__":
+    # You can change this to 'xbox' or 'pc' to test other protocols
+    target_console = "playstation" 
+    
+    print(f"--- Starting OmniSight Engine for: {target_console} ---")
+    
+    if target_console == "playstation":
+        sock = connect_playstation("192.168.1.50", "YOUR_PSN_ID", "1234")
+        if sock: run_capture_pipeline(sock, "PlayStation")
+            
+    elif target_console == "xbox":
+        sock = connect_xbox("192.168.1.60")
+        if sock: run_capture_pipeline(sock, "Xbox")
+
+    elif target_console == "pc":
+        if initialize_pc_capture():
+            print("[OMNI-ENGINE] PC Pipeline ready. DXGI output active.")   
