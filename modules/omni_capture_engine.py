@@ -118,7 +118,11 @@ def forward_to_gemini(data):
     pass # Placeholder for AI logic
 
 def forward_to_ui(data):
-    pass # Placeholder for Dashboard feed
+    try:
+        # Pushes the raw image bytes to the UI server
+        requests.post("http://127.0.0.1:5000/api/push_frame", data=data, headers={'Content-Type': 'application/octet-stream'}, timeout=0.1)
+    except:
+        pass
 
 def write_to_buffer(data):
     with open("stream_buffer.tmp", "ab") as f:
@@ -137,7 +141,7 @@ def run_capture_pipeline(connection_socket, console_type):
             # forward_to_gemini(raw_data)
             
             # SINK 2: UI Real-time Feed (Dashboard)
-            # forward_to_ui(raw_data)
+            forward_to_ui(raw_data)
             
             # SINK 3: Local Integrity Log
             # write_to_buffer(raw_data)

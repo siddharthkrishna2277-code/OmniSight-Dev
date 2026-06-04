@@ -69,6 +69,32 @@ def link_console():
         json.dump(data, f)
     return jsonify({"status": "Configuration Saved"})
 
+from flask import Response, request
+
+# Buffer to hold the latest video frame
+global_frame = None
+
+@app.route('/api/push_frame', methods=['POST'])
+def push_frame():
+    global global_frame
+    global_frame = request.data
+    return "OK", 200
+
+def generate_feed():
+    global global_frame
+    while True:
+        if global_frame:
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/jpeg\r\n\r\n' + global_frame + b'\r\n')
+        else:
+            import time
+            time.sleep(0.1)
+
+@app.route('/video_feed')
+def video_feed():
+    # This route streams the video to your HTML dashboard
+    return Response(generate_feed(), mimetype='multipart/x-mixed-replace; boundary=frame')
+
 def start_server():
     # Hardcoded host and port for your local network
     app.run(host='127.0.0.1', port=5000, debug=False, use_reloader=False)
