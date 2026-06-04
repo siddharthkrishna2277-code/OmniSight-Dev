@@ -1,3 +1,4 @@
+print("DEBUG: The file is executing!")
 # type: ignore
 import logging
 from flask import Flask, render_template, jsonify, request, make_response
@@ -49,4 +50,8 @@ def force_simulation():
 
 def start_server():
     # Hardcoded host and port for your local network
-    app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
+    app.run(host='127.0.0.1', port=5000, debug=False, use_reloader=False)
+
+    # ADD THIS PART AT THE VERY BOTTOM, ALIGNED TO THE LEFT MARGIN
+if __name__ == "__main__":
+    start_server()
