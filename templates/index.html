@@ -995,7 +995,6 @@
                     statusCard.style.color = "var(--ui-success-green)";
                 }
 
-                // 🌟 FIX: Checked case-insensitively against lowercase to perfectly catch python uppercase triggers
                 if (data.intel.toLowerCase().includes("launch stream window") || data.intel.toLowerCase().includes("awaiting target")) {
                     let segments = data.intel.split(":");
                     let rawProfileName = segments.length > 1 ? segments.pop().trim() : "ACTIVE LAYER";
@@ -1004,7 +1003,6 @@
                         CACHED_PROFILE_STATE = rawProfileName;
                         IS_DISPLAYING_MARKDOWN = false;
         
-                        // 🌟 FIX: Wiped the second-screen link card out from here entirely!
                         document.getElementById('intelContainer').innerHTML = `
                             <div class="unified-control-panel">
                                 <div class="panel-master-header">
@@ -1054,7 +1052,6 @@
                 } else {
                     CACHED_PROFILE_STATE = "";
                     IS_DISPLAYING_MARKDOWN = true;
-                    // 🌟 FIX: Moved the Second-Screen Sync Link card directly into this viewport loop instead
                     document.getElementById('intelContainer').innerHTML = `
                         <div style="display: flex; flex-direction: column; gap: 20px; align-items: center; width: 100%;">
                             <div class="markdown-body">
@@ -1168,6 +1165,3 @@
             </div>
         </div>
     </div>
-
-</body>
-</html>
