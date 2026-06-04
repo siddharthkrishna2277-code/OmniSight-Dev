@@ -10,6 +10,9 @@ static_dir = os.path.join(BASE_DIR, 'static')
 
 app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
 
+# FORCE FLASK TO READ THE NEW HTML FILE EVERY TIME
+app.config['TEMPLATES_AUTO_RELOAD'] = True
+
 # Suppress annoying background terminal web spam
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
