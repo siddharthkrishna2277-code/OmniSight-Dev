@@ -5,6 +5,14 @@ import socket
 import base64
 import traceback
 import datetime
+import requests # Make sure this is imported
+
+def update_ui_status(status_text):
+    try:
+        # This sends a signal to your Flask server to update the UI
+        requests.post("http://127.0.0.1:5000/api/update_status", json={"status": status_text})
+    except:
+        pass
 
 # --- SILENT AUTO-DEPENDENCY INSTALLER ---
 # Purpose: Checks the user's PC for required libraries on bootup.
@@ -99,25 +107,30 @@ def connect_xbox(xbox_ip):
 import cv2
 import numpy as np
 
-def run_capture_pipeline(connection_socket, console_type):
-    print(f"\n[OMNI-ENGINE] Pipeline engaged for {console_type}. Streaming active...")
-    print("[OMNI-ENGINE] Monitoring binary packet flow...")
+def run_capture_pipeline(source, console_type):
+    print(f"\n[OMNI-ENGINE] Pipeline engaged for {console_type}.")
+    
+    # Ping the UI
+    try:
+        requests.post("http://127.0.0.1:5000/api/update_status", json={"status": f"Connected to {console_type}"})
+    except:
+        pass
     
     while True:
         try:
-            # Receive raw binary stream from the console socket
-            # 65536 is our packet buffer size
-            raw_data = connection_socket.recv(65536) 
-            if not raw_data: 
-                print("[OMNI-ENGINE] Connection closed by host.")
-                break
+            # IF PC: Pull frame from your local capture object
+            if console_type == "PC_DirectX":
+                frame = source.get_latest_frame() # Assuming your engine uses this
+            # IF CONSOLE: Pull raw bytes from socket
+            else:
+                raw_data = source.recv(65536)
+                if not raw_data: break
+                frame = raw_data 
             
-            # Here, your logic will eventually pass raw_data to the AI/Gemini engine
-            # For now, we confirm the data is flowing to the console
-            print(f"[OMNI-ENGINE] Data received: {len(raw_data)} bytes")
+            print(f"[OMNI-ENGINE] Pipeline heartbeat: {console_type} active.")
             
         except Exception as e:
-            print(f"[OMNI-ENGINE] Stream interrupted: {e}")
+            print(f"[OMNI-ENGINE] Stream error: {e}")
             break
 
 # --- THE MASTER EXECUTION BLOCK (THE IGNITION) ---

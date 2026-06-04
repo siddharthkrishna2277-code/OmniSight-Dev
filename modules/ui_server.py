@@ -52,6 +52,14 @@ def force_simulation():
     UI_DATA["intel"] = "Launch your stream window or game client for profile: DIVISION2 (SIMULATION MODE)"
     return jsonify({"status": "success", "message": "Simulation mode activated"})
 
+# --- ADDED: BRIDGE ROUTE ---
+@app.route('/api/update_status', methods=['POST'])
+def update_status():
+    global UI_DATA
+    data = request.get_json()
+    UI_DATA["source"] = data.get("status", "Unknown")
+    return jsonify({"status": "success"})
+
 def start_server():
     # Hardcoded host and port for your local network
     app.run(host='127.0.0.1', port=5000, debug=False, use_reloader=False)
