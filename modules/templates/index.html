@@ -8,15 +8,12 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         :root {
-            /* Authentic Discord Core Design Palette Colors */
             --discord-bg-main: #313338;     
             --discord-bg-sidebar: #2b2d31;  
             --discord-bg-darkest: #1e1f22;  
             --discord-text-normal: #dbdee1; 
             --discord-text-muted: #949ba4;  
-            
             --omnisight-orange: #ff6a1a;
-            --accent-gradient: linear-gradient(135deg, #ff6a1a 0%, #ff8838 100%);
             --ui-success-green: #23a55a;    
             --card-border: rgba(255, 255, 255, 0.05);
         }
@@ -977,25 +974,24 @@
                 let response = await fetch('/api/data');
                 let data = await response.json();
                 
-                document.getElementById('windowSource').innerText = data.source;
-                document.getElementById('engineStatus').innerText = data.status;
-                document.getElementById('hiddenIpCarrier').value = "{{ local_ip }}";
-                
-                const ipLabel = document.getElementById('liveHomeIpLabel');
-                if (ipLabel) {
-                    ipLabel.innerText = "http://" + "{{ local_ip }}" + ":5000";
-                }
+                 document.getElementById('windowSource').innerText = data.source;
+                 document.getElementById('engineStatus').innerText = data.status;
+                 
+                 // hiddenIpCarrier and liveHomeIpLabel are already set by Flask template
+                 // No need to overwrite them here
                 
                 let statusCard = document.getElementById('engineStatus');
-                if (data.status.toLowerCase().includes("awaiting") || data.status.toLowerCase().includes("initializing")) {
+                let currentStatus = data.status.toLowerCase();
+                if (currentStatus.includes("awaiting") || currentStatus.includes("initializing")) {
                     statusCard.style.color = "#f59e0b";
-                } else if (data.status.toLowerCase().includes("processing")) {
+                } else if (currentStatus.includes("processing")) {
                     statusCard.style.color = "#38bdf8";
                 } else {
-                    statusCard.style.color = "var(--ui-success-green)";
+                    statusCard.style.color = "#23a55a"; // ui-success-green
                 }
 
-                if (data.intel.toLowerCase().includes("launch stream window") || data.intel.toLowerCase().includes("awaiting target") || data.intel.toLowerCase().includes("launch your stream window")) {
+                let currentIntel = data.intel.toLowerCase();
+                if (currentIntel.includes("launch stream window") || currentIntel.includes("awaiting target") || currentIntel.includes("launch your stream window")) {
                     let segments = data.intel.split(":");
                     let rawProfileName = segments.length > 1 ? segments.pop().trim() : "ACTIVE LAYER";
     
@@ -1102,23 +1098,26 @@
                 <div class="nav-group">
                     <div class="nav-group-header">System Profile Matrix</div>
                     <select id="profileSelector" onchange="updateMatrixProfile()">
-                        <optgroup label="Action RPGs & Looters">
-                            <option value="division2">The Division 2 (ISAC Link)</option>
-                            <option value="destiny2">Destiny 2 (Ghost Link)</option>
-                            <option value="diablo4">Diablo IV (Horadric Link)</option>
-                            <option value="pathofexile">Path of Exile 1 &amp; 2</option>
-                            <option value="warframe">Warframe Codex</option>
-                            <option value="monsterhunter">Monster Hunter World/Wilds</option>
-                        </optgroup>
-                        <optgroup label="Tactical Shooters & BRs">
-                            <option value="valorant">Valorant Overlay</option>
-                            <option value="counterstrike">Counter-Strike 2 (CS2)</option>
-                            <option value="apexlegends">Apex Legends</option>
-                            <option value="callofduty">Call of Duty: WZ / BO6</option>
-                            <option value="helldivers2">Helldivers II</option>
-                            <option value="fortnite">Fortnite</option>
-                        </optgroup>
-                    </select>
+    <!-- This is the default placeholder that forces the user to choose -->
+    <option value="" disabled selected>Please select your game</option>
+    
+    <optgroup label="Action RPGs & Looters">
+        <option value="division2">The Division 2 (ISAC Link)</option>
+        <option value="destiny2">Destiny 2 (Ghost Link)</option>
+        <option value="diablo4">Diablo IV (Horadric Link)</option>
+        <option value="pathofexile">Path of Exile 1 &amp; 2</option>
+        <option value="warframe">Warframe Codex</option>
+        <option value="monsterhunter">Monster Hunter World/Wilds</option>
+    </optgroup>
+    <optgroup label="Tactical Shooters & BRs">
+        <option value="valorant">Valorant Overlay</option>
+        <option value="counterstrike">Counter-Strike 2 (CS2)</option>
+        <option value="apexlegends">Apex Legends</option>
+        <option value="callofduty">Call of Duty: WZ / BO6</option>
+        <option value="helldivers2">Helldivers II</option>
+        <option value="fortnite">Fortnite</option>
+    </optgroup>
+</select>
                 </div>
 
                 <div class="nav-group">
@@ -1167,3 +1166,4 @@
     </div>
 
 </body>
+</html>

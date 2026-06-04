@@ -1,11 +1,16 @@
 import requests
 import json
+import os
 
 # --- DYNAMIC CLOUD TOGGLES (THE KILL SWITCH) ---
 # Purpose: Connects to your GitHub to read the master remote control file.
 
 # Note: We will replace this URL with your actual raw GitHub link before final launch.
-GITHUB_CONFIG_URL = "https://raw.githubusercontent.com/siddharthkrishna2277-code/OmniSight-Dev/main/config.json"
+# Made configurable via environment variable for flexibility
+GITHUB_CONFIG_URL = os.getenv(
+    "OMNI_GITHUB_CONFIG_URL", 
+    "https://raw.githubusercontent.com/siddharthkrishna2277-code/OmniSight-Dev/main/config.json"
+)
 
 def fetch_cloud_config():
     print("[OMNI-CLOUD] Checking GitHub for latest kill switches and updates...")
@@ -16,7 +21,7 @@ def fetch_cloud_config():
         "enable_pc_capture": True,
         "enable_playstation": True,
         "enable_xbox": True,
-        "app_version": "1.0.0"
+        "app_version": "1.0.1"
     }
 
     try:
@@ -34,7 +39,7 @@ def fetch_cloud_config():
         print(f"[OMNI-CLOUD] Network offline or GitHub blocked. Using local defaults.")
         return local_fallback
 
-def check_for_updates(cloud_config, current_version="1.0.0"):
+def check_for_updates(cloud_config, current_version="1.0.1"):
     # Reads the app_version from GitHub and compares it to the local app
     latest_version = cloud_config.get("app_version", current_version)
     

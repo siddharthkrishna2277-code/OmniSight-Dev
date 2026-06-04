@@ -6,7 +6,7 @@ import requests
 # Copilot Hardening: Remove hardcoded keys. Fall back to environment variable.
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "YOUR_FALLBACK_ENV_KEY")
 GEMINI_MODEL = "gemini-1.5-flash"
-GEMINI_ENDPOINT = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent?key={GEMINI_API_KEY}"
+GEMINI_ENDPOINT = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
 
 def encode_image_to_base64(cv2_image):
     """Converts an OpenCV image buffer into a base64 string for API transmission."""
@@ -46,7 +46,8 @@ def analyze_gear_card(image_frame, game_prompt):
     }
 
     headers = {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {GEMINI_API_KEY}"
     }
 
     try:
@@ -67,11 +68,11 @@ def analyze_gear_card(image_frame, game_prompt):
     except requests.exceptions.Timeout:
         print("[GEMINI-CLIENT] ⚠️ API request timed out. Main engine thread preserved.")
         return "⏳ [SYSTEM] Tactical Analysis delayed: Cloud link timed out under heavy load."
-        
+         
     except requests.exceptions.RequestException as e:
         print(f"[GEMINI-CLIENT] ⚠️ Network transmission failure: {str(e)}")
         return "⚠️ [SYSTEM] Synchronization offline: Unable to reach AI core analytics server."
-        
+         
     except (KeyError, IndexError) as e:
         print(f"[GEMINI-CLIENT] ⚠️ Parsing error on incoming payload structure: {str(e)}")
         return "⚠️ [SYSTEM] Diagnostics alert: Received malformed analytics data from host server."

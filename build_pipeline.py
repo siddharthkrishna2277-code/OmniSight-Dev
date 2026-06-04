@@ -26,7 +26,10 @@ def run_security_pipeline():
     try:
         # The command tells PyArmor to encrypt main.py and all local modules it touches, 
         # saving the locked versions into the 'dist_secure' folder.
-        build_command = [sys.executable, "-m", "pyarmor.cli.core", "gen", "-O", output_dir, "main.py"]
+        # We explicitly include the core modules to ensure they are all obfuscated
+        build_command = [sys.executable, "-m", "pyarmor.cli.core", "gen", "-O", output_dir, 
+                        "main.py", "modules/window_grabber.py", "modules/freeze_detector.py", 
+                        "modules/gemini_client.py", "modules/ui_server.py"]
         subprocess.check_call(build_command)
         
         print(f"\n[BUILD AGENT] ✅ SUCCESS: Project successfully locked!")

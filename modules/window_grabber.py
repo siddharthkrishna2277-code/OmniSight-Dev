@@ -37,8 +37,9 @@ def find_active_game_window(selected_game):
     targets = GAME_WINDOW_MAP.get(selected_game, ["PS Remote Play", "Xbox"])
     for target in targets:
         windows = gw.getWindowsWithTitle(target)
-        if windows and not windows[0].isMinimized:
-            return windows[0], target
+        for window in windows:
+            if not window.isMinimized and window.isActive:
+                return window, target
     return None, None
 
 def capture_window_frame(window):
