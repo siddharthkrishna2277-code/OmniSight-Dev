@@ -107,35 +107,35 @@ def connect_xbox(xbox_ip):
 import cv2
 import numpy as np
 
-def run_capture_pipeline(source, console_type):
+# --- THE UNIFIED PIPELINE MANAGER ---
+def run_capture_pipeline(connection_socket, console_type):
     print(f"\n[OMNI-ENGINE] Pipeline engaged for {console_type}.")
     
-    # Ping the UI
+    # Ping the UI Server
     try:
-        requests.post("http://127.0.0.1:5000/api/update_status", json={"status": f"Connected to {console_type}"})
-    except:
-        pass
+        requests.post("http://127.0.0.1:5000/api/update_status", 
+                      json={"status": f"Connected to {console_type}"})
+    except Exception as e:
+        print(f"[OMNI-ENGINE] UI update failed: {e}")
     
     while True:
         try:
-            # IF PC: Pull frame from your local capture object
-            if console_type == "PC_DirectX":
-                frame = source.get_latest_frame() # Assuming your engine uses this
-            # IF CONSOLE: Pull raw bytes from socket
-            else:
-                raw_data = source.recv(65536)
-                if not raw_data: break
-                frame = raw_data 
+            raw_data = connection_socket.recv(65536) 
+            if not raw_data: break
             
-            print(f"[OMNI-ENGINE] Pipeline heartbeat: {console_type} active.")
+            # Use the imported libraries here
+            nparr = np.frombuffer(raw_data, np.uint8)
+            frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            
+            print(f"[OMNI-ENGINE] Pipeline heartbeat: {len(raw_data)} bytes received.")
             
         except Exception as e:
             print(f"[OMNI-ENGINE] Stream error: {e}")
             break
 
-# --- THE MASTER EXECUTION BLOCK (THE IGNITION) ---
+# --- THE MASTER EXECUTION BLOCK ---
 if __name__ == "__main__":
-    # You can change this to 'xbox' or 'pc' to test other protocols
+    # You can drive this with a config file later
     target_console = "playstation" 
     
     print(f"--- Starting OmniSight Engine for: {target_console} ---")
@@ -150,4 +150,6 @@ if __name__ == "__main__":
 
     elif target_console == "pc":
         if initialize_pc_capture():
-            print("[OMNI-ENGINE] PC Pipeline ready. DXGI output active.")   
+            print("[OMNI-ENGINE] PC DirectX capture active. Frame acquisition would happen here.")
+            # In a real implementation, this would interface with DXGI to capture frames
+            # and feed them to a processing loop similar to run_capture_pipeline
