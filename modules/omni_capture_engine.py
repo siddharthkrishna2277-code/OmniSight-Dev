@@ -193,7 +193,7 @@ def run_pc_pipeline():
 # --- THE MASTER EXECUTION BLOCK ---
 if __name__ == "__main__":
     try:
-        with open("omni_link_settings.json", "r") as f:
+        with open("modules/omni_link_settings.json", "r") as f:
             config = json.load(f)
             psn_id = config.get("psn_id")
             pin = config.get("pin")

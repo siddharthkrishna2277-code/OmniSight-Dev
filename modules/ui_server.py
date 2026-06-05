@@ -65,7 +65,7 @@ import json
 @app.route('/api/link_console', methods=['POST'])
 def link_console():
     data = request.get_json()
-    with open("omni_link_settings.json", "w") as f:
+    with open("modules/omni_link_settings.json", "w") as f:
         json.dump(data, f)
     return jsonify({"status": "Configuration Saved"})
 
