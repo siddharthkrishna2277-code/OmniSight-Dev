@@ -1048,26 +1048,26 @@ document.getElementById('intelContainer').innerHTML = `
                 } else {
                     CACHED_PROFILE_STATE = "";
                     IS_DISPLAYING_MARKDOWN = true;
-document.getElementById('intelContainer').innerHTML = `
-                         <div style="display: flex; flex-direction: column; gap: 20px; align-items: center; width: 100%;">
-                             
-                             <img src="http://127.0.0.1:5000/video_feed" style="width: 100%; max-width: 820px; border-radius: 12px; border: 1px solid var(--card-border); box-shadow: 0 12px 30px rgba(0,0,0,0.2);" />
+                    document.getElementById('intelContainer').innerHTML = `
+                        <div style="display: flex; flex-direction: column; gap: 20px; align-items: center; width: 100%;">
+                            
+                            <img src="http://127.0.0.1:5000/video_feed" style="width: 100%; max-width: 820px; border-radius: 12px; border: 1px solid var(--card-border); box-shadow: 0 12px 30px rgba(0,0,0,0.2);" />
 
-                             <div class="markdown-body">
-                                 ${marked.parse(data.intel)}
-                             </div>
-             
-                             <div class="home-broadcaster-card" style="max-width: 820px; margin-top: 0; width: 100%; box-sizing: border-box;">
-                                 <h5>📱 Second-Screen Sync Link</h5>
-                                 <p>Load this address on your tablet or smartphone browser grid to view your dashboard externally over Wi-Fi.</p>
-                                 <div class="clipboard-link-container">
-                                     <div id="liveHomeIpLabel" class="clipboard-text-string">http://{{ local_ip }}:5000</div>
-                                     <button class="action-icon-btn" onclick="navigator.clipboard.writeText('http://' + document.getElementById('hiddenIpCarrier').value + ':5000')">COPY</button>
-                                 </div>
-                             </div>
-                         </div>
-                     `;
-                } 
+                            <div class="markdown-body">
+                                ` + marked.parse(data.intel) + `
+                            </div>
+            
+                            <div class="home-broadcaster-card" style="max-width: 820px; margin-top: 0; width: 100%; box-sizing: border-box;">
+                                <h5>📱 Second-Screen Sync Link</h5>
+                                <p>Load this address on your tablet or smartphone browser grid to view your dashboard externally over Wi-Fi.</p>
+                                <div class="clipboard-link-container">
+                                    <div id="liveHomeIpLabel" class="clipboard-text-string">http://{{ local_ip }}:5000</div>
+                                    <button class="action-icon-btn" onclick="navigator.clipboard.writeText('http://' + document.getElementById('hiddenIpCarrier').value + ':5000')">COPY</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
             } catch(e) {}
         }
         
