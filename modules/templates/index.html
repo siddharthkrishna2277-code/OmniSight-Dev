@@ -999,72 +999,75 @@
                         CACHED_PROFILE_STATE = rawProfileName;
                         IS_DISPLAYING_MARKDOWN = false;
         
-                        document.getElementById('intelContainer').innerHTML = `
-                            <div class="unified-control-panel">
-                                <div class="panel-master-header">
-                                    <h3>NATIVE ZERO-APP SYNC ENGINE</h3>
-                                </div>
-                                <div class="panel-split-workspace">
-                                    <div class="welcome-panel-left">
-                                        <div class="beacon-pulse-indicator"></div>
-                                        <h2>Connect Gaming Feed</h2>
-                                        <p>OmniSight is directly monitoring network links. Initiate native handshakes for environmental engine matrix layer:</p>
-                                        <div class="matrix-pill-badge">` + rawProfileName + `</div>
-                                    </div>
-                                    <div class="onboarding-guide-right">
-                                        <div class="guide-step-tile">
-                                            <div class="tile-number-badge">01</div>
-                                            <div class="tile-text-group">
-                                                <h4>Native PlayStation Link Engine</h4>
-                                                <p>Enter your PSN Account ID and your 8-digit console sync PIN code to route the encrypted hardware stream directly into the local application layer.</p>
-                                                <div class="handshake-inline-form">
-                                                    <input type="text" id="psnIdInput" placeholder="Enter PSN Account ID...">
-                                                    <input type="text" id="psnPinInput" placeholder="8-Digit TV Code...">
-                                                    <button class="handshake-submit-btn" onclick="executeHandshake('playstation')">Link Hardware</button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="guide-step-tile">
-                                            <div class="tile-number-badge">02</div>
-                                            <div class="tile-text-group">
-                                                <h4>Native Xbox Link Engine</h4>
-                                                <p>Authenticate your local Microsoft console profile to establish a direct, high-speed local stream handshake straight from your Xbox hardware.</p>
-                                                <button class="handshake-submit-btn" style="width:100%; padding:10px;" onclick="executeHandshake('xbox')">Authenticate Native Xbox Link</button>
-                                            </div>
-                                        </div>
-                                        <div class="guide-step-tile">
-                                            <div class="tile-number-badge">03</div>
-                                            <div class="tile-text-group">
-                                                <h4>Native PC Capture Module</h4>
-                                                <p>No extra software needed. Launch your game window (Steam, Battle.net, Epic) in borderless mode and the app intercepts the screen pipeline seamlessly.</p>
-                                                <button class="handshake-submit-btn" style="width:100%; padding:10px; background:#23a55a;" onclick="executeHandshake('pc')">Initialize Auto Window Intercept</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
+document.getElementById('intelContainer').innerHTML = `
+                             <div class="unified-control-panel">
+                                 <div class="panel-master-header">
+                                     <h3>NATIVE ZERO-APP SYNC ENGINE</h3>
+                                 </div>
+                                 <div class="panel-split-workspace">
+                                     <div class="welcome-panel-left">
+                                         <div class="beacon-pulse-indicator"></div>
+                                         <h2>Connect Gaming Feed</h2>
+                                         <p>OmniSight is directly monitoring network links. Initiate native handshakes for environmental engine matrix layer:</p>
+                                         <div class="matrix-pill-badge">${rawProfileName}</div>
+                                     </div>
+                                     <div class="onboarding-guide-right">
+                                         <div class="guide-step-tile">
+                                             <div class="tile-number-badge">01</div>
+                                             <div class="tile-text-group">
+                                                 <h4>Native PlayStation Link Engine</h4>
+                                                 <p>Enter your PSN Account ID and your 8-digit console sync PIN code to route the encrypted hardware stream directly into the local application layer.</p>
+                                                 <div class="handshake-inline-form">
+                                                     <input type="text" id="psnIdInput" placeholder="Enter PSN Account ID...">
+                                                     <input type="text" id="psnPinInput" placeholder="8-Digit TV Code...">
+                                                     <button class="handshake-submit-btn" onclick="executeHandshake('playstation')">Link Hardware</button>
+                                                 </div>
+                                             </div>
+                                         </div>
+                                         <div class="guide-step-tile">
+                                             <div class="tile-number-badge">02</div>
+                                             <div class="tile-text-group">
+                                                 <h4>Native Xbox Link Engine</h4>
+                                                 <p>Authenticate your local Microsoft console profile to establish a direct, high-speed local stream handshake straight from your Xbox hardware.</p>
+                                                 <button class="handshake-submit-btn" style="width:100%; padding:10px;" onclick="executeHandshake('xbox')">Authenticate Native Xbox Link</button>
+                                             </div>
+                                         </div>
+                                         <div class="guide-step-tile">
+                                             <div class="tile-number-badge">03</div>
+                                             <div class="tile-text-group">
+                                                 <h4>Native PC Capture Module</h4>
+                                                 <p>No extra software needed. Launch your game window (Steam, Battle.net, Epic) in borderless mode and the app intercepts the screen pipeline seamlessly.</p>
+                                                 <button class="handshake-submit-btn" style="width:100%; padding:10px; background:#23a55a;" onclick="executeHandshake('pc')">Initialize Auto Window Intercept</button>
+                                             </div>
+                                         </div>
+                                     </div>
+                                 </div>
+                             </div>
+                         `;
                     }
                 } else {
                     CACHED_PROFILE_STATE = "";
                     IS_DISPLAYING_MARKDOWN = true;
-                    document.getElementById('intelContainer').innerHTML = `
-                        <div style="display: flex; flex-direction: column; gap: 20px; align-items: center; width: 100%;">
-                            <div class="markdown-body">
-                                ` + marked.parse(data.intel) + `
-                            </div>
-            
-                            <div class="home-broadcaster-card" style="max-width: 820px; margin-top: 0; width: 100%; box-sizing: border-box;">
-                                <h5>📱 Second-Screen Sync Link</h5>
-                                <p>Load this address on your tablet or smartphone browser grid to view your dashboard externally over Wi-Fi.</p>
-                                <div class="clipboard-link-container">
-                                    <div id="liveHomeIpLabel" class="clipboard-text-string">http://{{ local_ip }}:5000</div>
-                                    <button class="action-icon-btn" onclick="navigator.clipboard.writeText('http://' + document.getElementById('hiddenIpCarrier').value + ':5000')">COPY</button>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }
+document.getElementById('intelContainer').innerHTML = `
+                         <div style="display: flex; flex-direction: column; gap: 20px; align-items: center; width: 100%;">
+                             
+                             <img src="http://127.0.0.1:5000/video_feed" style="width: 100%; max-width: 820px; border-radius: 12px; border: 1px solid var(--card-border); box-shadow: 0 12px 30px rgba(0,0,0,0.2);" />
+
+                             <div class="markdown-body">
+                                 ${marked.parse(data.intel)}
+                             </div>
+             
+                             <div class="home-broadcaster-card" style="max-width: 820px; margin-top: 0; width: 100%; box-sizing: border-box;">
+                                 <h5>📱 Second-Screen Sync Link</h5>
+                                 <p>Load this address on your tablet or smartphone browser grid to view your dashboard externally over Wi-Fi.</p>
+                                 <div class="clipboard-link-container">
+                                     <div id="liveHomeIpLabel" class="clipboard-text-string">http://{{ local_ip }}:5000</div>
+                                     <button class="action-icon-btn" onclick="navigator.clipboard.writeText('http://' + document.getElementById('hiddenIpCarrier').value + ':5000')">COPY</button>
+                                 </div>
+                             </div>
+                         </div>
+                     `;
+                } 
             } catch(e) {}
         }
         
