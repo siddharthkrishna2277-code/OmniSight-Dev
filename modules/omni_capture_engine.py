@@ -147,6 +147,11 @@ def run_capture_pipeline(connection_socket, console_type):
             # write_to_buffer(raw_data)
             
             print(f"[OMNI-ENGINE] Heartbeat: Processed {len(raw_data)} bytes across 3 sinks.")
+            
+            # SPEED LIMIT: Prevent DDOSing the local UI server
+            import time
+            time.sleep(0.033)
+
         except Exception as e:
             print(f"[OMNI-ENGINE] Stream error: {e}")
             break
