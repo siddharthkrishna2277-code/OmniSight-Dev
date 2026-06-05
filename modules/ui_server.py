@@ -87,9 +87,8 @@ def generate_feed():
         if global_frame:
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + global_frame + b'\r\n')
-        
-        # This single line forces a 33ms pause (~30 FPS), stopping the data flood
-        time.sleep(0.03)
+        # This keeps the loop alive but yields control back to the server
+        time.sleep(0.05)
 
 @app.route('/video_feed')
 def video_feed():
