@@ -120,9 +120,9 @@ def forward_to_gemini(data):
 def forward_to_ui(data):
     try:
         # Pushes the raw image bytes to the UI server
-        requests.post("http://127.0.0.1:5000/api/push_frame", data=data, headers={'Content-Type': 'application/octet-stream'}, timeout=0.1)
-    except:
-        pass
+        requests.post("http://127.0.0.1:5000/api/push_frame", data=data, headers={'Content-Type': 'application/octet-stream'}, timeout=0.5)
+    except Exception as e:
+        print(f"[UI-DROP ERROR] {e}")
 
 def write_to_buffer(data):
     with open("stream_buffer.tmp", "ab") as f:
