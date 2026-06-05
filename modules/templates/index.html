@@ -958,7 +958,18 @@
             }
         }
 
-        async function executeHandshake(platform) {
+       async function executeHandshake(platform) {
+            // Sends your console choice to the server to generate the config file
+            await fetch('/api/link_console', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    console_type: platform,
+                    psn_id: document.getElementById('psnIdInput') ? document.getElementById('psnIdInput').value : "",
+                    pin: document.getElementById('psnPinInput') ? document.getElementById('psnPinInput').value : "",
+                    ip: "127.0.0.1" 
+                })
+            });
             alert(platform.toUpperCase() + " Native Link Handshake Initialized Successfully!");
         }
 
